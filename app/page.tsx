@@ -205,17 +205,19 @@ export default function Page() {
     const [results, setResults] = useState<Result[]>([])
     const track = tracks[selectedTrack]
     const questions = useMemo(() => track.questions.filter((question) => question.difficulty === difficulty), [track, difficulty])
-    const activeQuestion = questions[current]
+    const safeCurrent = Math.min(current, Math.max(questions.length - 1, 0))
+    const activeQuestion = questions[safeCurrent]
     const score = answers.reduce((sum, answer, index) => sum + (answer === questions[index]?.answer ? 1 : 0), 0)
     const result = results.find((item) => item.trackId === track.id && item.difficulty === difficulty)
 
     useEffect(() => { const stored = window.localStorage.getItem('preplab-results'); if (stored) setResults(JSON.parse(stored)) }, [])
-    useEffect(() => { if (!started || finished) return; const timer = window.setInterval(() => setSecondsLeft((value) => { if (value <= 1) { window.clearInterval(timer); finishTrack(); return 0 } return value - 1 }), 1000); return () => window.clearInterval(timer) }, [started, finished, questions])
+    useEffect(() => { setCurrent(0); setRevealed(false) }, [selectedTrack, difficulty])
+    useEffect(() => { if (!started || finished || questions.length === 0) return; const timer = window.setInterval(() => setSecondsLeft((value) => { if (value <= 1) { window.clearInterval(timer); finishTrack(); return 0 } return value - 1 }), 1000); return () => window.clearInterval(timer) }, [started, finished, questions.length, answers, results, selectedTrack, difficulty])
 
     function finishTrack(finalAnswers = answers) { const finalScore = finalAnswers.reduce((sum, answer, index) => sum + (answer === questions[index]?.answer ? 1 : 0), 0); const next = [...results.filter((item) => !(item.trackId === track.id && item.difficulty === difficulty)), { trackId: track.id, difficulty, score: finalScore, total: questions.length, completedAt: new Date().toISOString() }]; setResults(next); window.localStorage.setItem('preplab-results', JSON.stringify(next)); setFinished(true) }
     function beginTrack(index = selectedTrack) { setSelectedTrack(index); setStarted(true); setFinished(false); setCurrent(0); setAnswers([]); setRevealed(false); setSecondsLeft(420) }
-    function chooseAnswer(index: number) { const next = [...answers]; next[current] = index; setAnswers(next); setRevealed(true) }
-    function goToQuestion(index: number) { setCurrent(index); setRevealed(answers[index] !== undefined) }
+    function chooseAnswer(index: number) { if (!activeQuestion) return; const next = [...answers]; next[safeCurrent] = index; setAnswers(next); setRevealed(true) }
+    function goToQuestion(index: number) { const nextIndex = Math.min(Math.max(index, 0), Math.max(questions.length - 1, 0)); setCurrent(nextIndex); setRevealed(answers[nextIndex] !== undefined) }
 
     return <main className="min-h-screen bg-background text-foreground">
         <header className="border-b border-border bg-card/80 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-8"><div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground"><Zap className="size-5" /></div><div><p className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Assessment sprint</p><h1 className="font-serif text-xl font-bold tracking-tight">PrepLab</h1></div></div><div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex"><Clock3 className="size-4" /> 7 minutes · {questions.length} questions</div></div></header>
