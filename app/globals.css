@@ -159,5 +159,41 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+
+  button,
+  p,
+  h1,
+  h2,
+  h3,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  main > div {
+    min-width: 0;
+  }
+
+  main > div > aside,
+  main > div > section {
+    min-width: 0;
+    width: 100%;
+  }
+
+  main > div > section h2 {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+
+  main [role='status'] {
+    bottom: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
   }
 }
